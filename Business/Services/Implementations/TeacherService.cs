@@ -15,6 +15,8 @@ public class TeacherService : Service<Teacher>, ITeacherService
     private readonly IMapper _mapper;
     private readonly ILogger<TeacherService> _logger;
 
+    private readonly List<string> _allowedExtensions = new List<string> { ".jpg", ".jpeg", ".png", ".gif" };
+
     public TeacherService(
         ITeacherRepository teacherRepository,
         IMapper mapper,
@@ -24,6 +26,73 @@ public class TeacherService : Service<Teacher>, ITeacherService
         _teacherRepository = teacherRepository;
         _mapper = mapper;
         _logger = logger;
+    }
+
+    public async Task<Teacher> CreateAsync(CreateTeacherDTO dto)
+    {
+        try
+        {
+            if (dto == null)
+                throw new ValidationException("Teacher data cannot be null");
+
+            if (await _teacherRepository.IsExistAsync(t => t.Email == dto.Email))
+                throw new BusinessException("Teacher with this email already exists");
+
+            if (!string.IsNullOrEmpty(dto.ProfileImgUrl))
+            {
+                var fileExtension = Path.GetExtension(dto.ProfileImgUrl).ToLower();
+                if (!_allowedExtensions.Contains(fileExtension))
+                    throw new ValidationException(
+                        $"Invalid file format. Allowed formats: {string.Join(", ", _allowedExtensions)}");
+            }
+
+            var teacher = _mapper.Map<Teacher>(dto);
+            await _teacherRepository.CreateAsync(teacher);
+            await _teacherRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Teacher created successfully with ID {Id}", teacher.Id);
+            return teacher;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while creating teacher");
+            throw;
+        }
+    }
+
+    public async Task UpdateAsync(int id, UpdateTeacherDTO dto)
+    {
+        try
+        {
+            if (dto == null)
+                throw new ValidationException("Teacher update data cannot be null");
+
+            var teacher = await _teacherRepository.GetByIdAsync(id);
+            if (teacher == null)
+                throw new NotFoundException($"Teacher with ID {id} not found");
+
+            if (await _teacherRepository.IsExistAsync(t => t.Email == dto.Email && t.Id != id))
+                throw new BusinessException("Teacher with this email already exists");
+
+            if (!string.IsNullOrEmpty(dto.ProfileImgUrl))
+            {
+                var fileExtension = Path.GetExtension(dto.ProfileImgUrl).ToLower();
+                if (!_allowedExtensions.Contains(fileExtension))
+                    throw new ValidationException(
+                        $"Invalid file format. Allowed formats: {string.Join(", ", _allowedExtensions)}");
+            }
+
+            _mapper.Map(dto, teacher);
+            await _teacherRepository.UpdateAsync(teacher);
+            await _teacherRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Teacher updated successfully with ID {Id}", id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while updating teacher with ID {Id}", id);
+            throw;
+        }
     }
 
     public async Task<GetTeacherDTO?> GetTeacherWithCoursesAsync(int id)
@@ -73,57 +142,6 @@ public class TeacherService : Service<Teacher>, ITeacherService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while getting teacher details for ID {Id}", id);
-            throw;
-        }
-    }
-
-    public async Task<Teacher> CreateAsync(CreateTeacherDTO dto)
-    {
-        try
-        {
-            if (dto == null)
-                throw new ValidationException("Teacher data cannot be null");
-
-            if (await _teacherRepository.IsExistAsync(t => t.Email == dto.Email))
-                throw new BusinessException("Teacher with this email already exists");
-
-            var teacher = _mapper.Map<Teacher>(dto);
-            await _teacherRepository.CreateAsync(teacher);
-            await _teacherRepository.SaveChangesAsync();
-
-            _logger.LogInformation("Teacher created successfully with ID {Id}", teacher.Id);
-            return teacher;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while creating teacher");
-            throw;
-        }
-    }
-
-    public async Task UpdateAsync(int id, UpdateTeacherDTO dto)
-    {
-        try
-        {
-            if (dto == null)
-                throw new ValidationException("Teacher update data cannot be null");
-
-            var teacher = await _teacherRepository.GetByIdAsync(id);
-            if (teacher == null)
-                throw new NotFoundException($"Teacher with ID {id} not found");
-
-            if (await _teacherRepository.IsExistAsync(t => t.Email == dto.Email && t.Id != id))
-                throw new BusinessException("Teacher with this email already exists");
-
-            _mapper.Map(dto, teacher);
-            await _teacherRepository.UpdateAsync(teacher);
-            await _teacherRepository.SaveChangesAsync();
-
-            _logger.LogInformation("Teacher updated successfully with ID {Id}", id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while updating teacher with ID {Id}", id);
             throw;
         }
     }

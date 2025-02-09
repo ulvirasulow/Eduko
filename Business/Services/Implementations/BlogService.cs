@@ -1,6 +1,7 @@
 using AutoMapper;
 using Business.DTOs.Blog;
 using Business.Helpers.Exceptions.Common;
+using Business.Helpers.Extension;
 using Business.Services.Interfaces;
 using Core.Entities;
 using DAL.Repository.Interfaces;
@@ -85,6 +86,12 @@ public class BlogService : Service<Blog>, IBlogService
                 throw new BusinessException("Blog with this name already exists");
 
             var blog = _mapper.Map<Blog>(dto);
+
+            if (dto.Photo != null)
+            {
+                blog.ImgUrl = dto.Photo.Upload(_env.WebRootPath, "Uploads/Blogs");
+            }
+
             await _blogRepository.CreateAsync(blog);
             await _blogRepository.SaveChangesAsync();
 
@@ -112,6 +119,16 @@ public class BlogService : Service<Blog>, IBlogService
             if (await _blogRepository.IsExistAsync(b => b.Name == dto.Name && b.Id != id))
                 throw new BusinessException("Blog with this name already exists");
 
+            if (dto.Photo != null)
+            {
+                if (!string.IsNullOrEmpty(blog.ImgUrl))
+                {
+                    FileExtension.DeleteFile(_env.WebRootPath, "Uploads/Blogs", blog.ImgUrl);
+                }
+
+                blog.ImgUrl = dto.Photo.Upload(_env.WebRootPath, "Uploads/Blogs");
+            }
+
             _mapper.Map(dto, blog);
             await _blogRepository.UpdateAsync(blog);
             await _blogRepository.SaveChangesAsync();
@@ -134,11 +151,7 @@ public class BlogService : Service<Blog>, IBlogService
 
             if (!string.IsNullOrEmpty(blog.ImgUrl))
             {
-                string filePath = Path.Combine(_env.WebRootPath, "Uploads", "Blogs", blog.ImgUrl);
-                if (File.Exists(filePath))
-                {
-                    File.Delete(filePath);
-                }
+                FileExtension.DeleteFile(_env.WebRootPath, "Uploads/Blogs", blog.ImgUrl);
             }
 
             await _blogRepository.DeleteAsync(blog);

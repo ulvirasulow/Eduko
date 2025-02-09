@@ -1,57 +1,25 @@
 using AutoMapper;
 using Business.DTOs.Blog;
-using Business.Helpers.Exceptions.Common;
-using Business.Helpers.Extension;
 using Business.Services.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace App.Controllers;
-
+namespace App.Areas.Manage.Controllers;
+[Area("Manage")]
 public class BlogController : Controller
 {
     private readonly IBlogService _blogService;
-    private readonly ILogger<BlogController> _logger;
+    private readonly ILogger<App.Controllers.BlogController> _logger;
     private readonly IMapper _mapper;
 
     public BlogController(
         IBlogService blogService,
-        ILogger<BlogController> logger,
+        ILogger<App.Controllers.BlogController> logger,
         IMapper mapper)
     {
         _blogService = blogService;
         _logger = logger;
         _mapper = mapper;
     }
-
-    public async Task<IActionResult> Index()
-    {
-        try
-        {
-            var blogs = await _blogService.GetBlogsWithTeacherAsync();
-            return View(blogs);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Bloqları gətirərkən xəta baş verdi");
-            return View(new List<GetBlogDTO>());
-        }
-    }
-
-    public async Task<IActionResult> BlogDetails(int id)
-    {
-        try
-        {
-            var blog = await _blogService.GetBlogDetailsAsync(id);
-            return View(blog);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Bloq detallarını gətirərkən xəta baş verdi. ID: {Id}", id);
-            return RedirectToAction(nameof(Index));
-        }
-    }
-
     [HttpGet]
     /*[Authorize(Roles = "Admin,Teacher")]*/
     public IActionResult Create()

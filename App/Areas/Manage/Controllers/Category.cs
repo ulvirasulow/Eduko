@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace App.Controllers;
+namespace App.Areas.Manage.Controllers;
 
-public class StudentController : Controller
+public class Category : Controller
 {
-    // GET
     public IActionResult Index()
     {
         return View();

@@ -9,7 +9,7 @@ public class CreateCourseDTO
     public string Description { get; set; }
     public decimal Price { get; set; }
     public string? ImgUrl { get; set; }
-    public IFormFile Photo { get; set; }
+    public IFormFile? Photo { get; set; }
     public int Duration { get; set; }
     public int Lessons { get; set; }
     public string Language { get; set; }

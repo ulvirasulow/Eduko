@@ -2,6 +2,7 @@ using AutoMapper;
 using Business.DTOs.Blog;
 using Business.DTOs.Course;
 using Business.Helpers.Exceptions.Common;
+using Business.Helpers.Extension;
 using Business.Services.Interfaces;
 using Core.Entities;
 using Core.Entities.Enums;
@@ -182,6 +183,25 @@ public class CourseService : Service<Course>, ICourseService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while updating status for course ID {Id}", id);
+            throw;
+        }
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        try
+        {
+            var blog = await _courseRepository.GetByIdAsync(id);
+            if (blog == null) throw new NotFoundException($"ID: {id} olan course tapılmadı");
+
+            await _courseRepository.DeleteAsync(blog);
+            await _courseRepository.SaveChangesAsync();
+
+            _logger.LogInformation("Course uğurla silindi. ID: {Id}", id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Course silinərkən xəta baş verdi. ID: {Id}", id);
             throw;
         }
     }
